@@ -1,5 +1,10 @@
 /.idea/
-/target/
+/target/classes/
+/target/test-classes/
+/target/maven-status/
+/target/maven-archiver/
+/target/generated-sources/
+/target/original-BadAppleRealtime-1.0-SNAPSHOT.jar
 /.vscode/
 
 dependency-reduced-pom.xml

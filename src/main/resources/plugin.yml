@@ -4,11 +4,10 @@ main: tr.com.salihefee.badapplerealtime.BadApple
 api-version: '1.20'
 commands:
   badappler:
-    usage: /badappler <video>
-    description: Plays Bad Apple.
+    usage: /badappler <videoName>
+    description: Plays the video specified.
   cancelr:
     usage: /cancelr
-    description: Cancels playback.
+    description: Stops playback.
   extractr:
-    usage: /extractr <video> <size>
-
+    usage: /extractr <videoPath> <size>

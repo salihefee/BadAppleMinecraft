@@ -16,10 +16,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.*;
 import javax.imageio.ImageIO;
 
 public final class BadApple extends JavaPlugin implements Listener {
@@ -46,8 +45,18 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     private static final List<BukkitTask> renderTasks = Collections.synchronizedList(new ArrayList<>());
 
-    private static int extractImages(String videoWithExtension, String size) throws IOException, InterruptedException {
-        String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
+    private static final Map<String, String> framePaths = new HashMap<>();
+
+    private static int extractImages(Path videoPath, String size) throws IOException, InterruptedException {
+        Path videoParent = videoPath.getParent();
+
+        Path videoFile = videoPath.getFileName();
+
+        String videoFileName = videoFile.toString();
+
+        String videoFileNameNoExtension = videoFileName.substring(0, videoFileName.lastIndexOf('.'));
+
+        Path framesDir = Paths.get(videoParent.toString(), videoFileNameNoExtension + "frames");
 
         ProcessBuilder processBuilder = new ProcessBuilder();
 
@@ -56,21 +65,23 @@ public final class BadApple extends JavaPlugin implements Listener {
         int exitCode;
 
         processBuilder.command("bash", "-c",
-                "mkdir /home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames");
+                "mkdir " + framesDir);
 
         process = processBuilder.start();
 
         exitCode = process.waitFor();
 
-        if (exitCode != 0) {
-            File dir = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames");
-            for (File file : Objects.requireNonNull(dir.listFiles())) file.delete();
+        if (exitCode != 0 && Objects.requireNonNull(new File(framesDir.toString()).listFiles()).length != 0) {
+            File dir = new File(framesDir.toString());
+            File[] files = Objects.requireNonNull(dir.listFiles());
+            boolean deleteSuccess = false;
+            for (File file : files) deleteSuccess = file.delete();
+            if (!deleteSuccess) throw new IOException("Failed to delete files in " + framesDir + ".");
         }
 
         processBuilder.command("bash", "-c",
-                "ffmpeg -i /home/salihefee/Documents/BadApple/BadAppleInput/" + videoWithExtension
-                        + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/BadApple/BadAppleInput/"
-                        + video + "frames/frame%d.png");
+                "ffmpeg -i " + videoPath
+                        + " -vf 'fps=20, scale=-1:" + size + "' " + Paths.get(framesDir.toString(), "frame%d.png"));
 
         try {
             process = processBuilder.start();
@@ -117,21 +128,12 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            String videoWithExtension = args[0];
+            String framesPath = framePaths.get(args[0]);
 
-            String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
-
-//            int exitCode;
-//            try {
-//                exitCode = extractImages(args[1]);
-//            } catch (IOException | InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            if (exitCode != 0) {
-//                System.out.println("Failure!");
-//                return false;
-//            }
+            if (framesPath == null) {
+                sender.sendMessage("Please extract the video first.");
+                return false;
+            }
 
             World world = Bukkit.getWorld("world");
 
@@ -143,7 +145,7 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             try {
                 firstFrame = ImageIO.read(new File(
-                        String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes/frame1.png", video)));
+                        Paths.get(framesPath, "frame1.png").toString()));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -174,7 +176,7 @@ public final class BadApple extends JavaPlugin implements Listener {
             final int[] currentFrame = {1};
 
             int length = Objects.requireNonNull(
-                    new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes", video))
+                    new File(framesPath)
                             .listFiles(File::isFile)).length;
 
             synchronized (renderTasks) {
@@ -187,8 +189,8 @@ public final class BadApple extends JavaPlugin implements Listener {
                     BufferedImage image;
                     int[][] intensities;
 
-                    File file = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame"
-                            + currentFrame[0] + ".png");
+                    File file = new File(Paths.get(framesPath, "/frame"
+                            + currentFrame[0] + ".png").toString());
 
                     try (FileInputStream fis = new FileInputStream(file)) {
                         image = ImageIO.read(fis);
@@ -228,13 +230,22 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            String videoWithExtension = args[0];
+            String videoPathStr = args[0];
 
-            String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
+            Path videoPath = Paths.get(videoPathStr);
+
+            File videoFile = videoPath.toFile();
+
+            String videoNameNoExtension = videoFile.getName().substring(0, videoFile.getName().lastIndexOf('.'));
+
+            if (!videoFile.exists()) {
+                sender.sendMessage("File not found.");
+                return false;
+            }
 
             int exitCode;
             try {
-                exitCode = extractImages(args[0], args[1]);
+                exitCode = extractImages(videoPath, args[1]);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -244,7 +255,9 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            sender.sendMessage("Extracted frames from " + videoWithExtension + " to " + video + "frames");
+            sender.sendMessage("Extraction done.");
+
+            framePaths.put(videoFile.getName(), Paths.get(videoPath.getParent().toString(), videoNameNoExtension + "frames").toString());
 
             return true;
         }
