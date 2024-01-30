@@ -102,7 +102,7 @@ public final class BadApple extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        getLogger().info("Bye, World :(");
+        getLogger().info("Bye, World!");
     }
 
     @EventHandler
