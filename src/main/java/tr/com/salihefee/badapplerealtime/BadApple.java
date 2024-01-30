@@ -46,11 +46,9 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     private static final List<BukkitTask> renderTasks = Collections.synchronizedList(new ArrayList<>());
 
-    private static String videoWithExtension = "badapple.mp4";
+    private static int extractImages(String videoWithExtension, String size) throws IOException, InterruptedException {
+        String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
 
-    private static String video;
-
-    private static int extractImages(String size) throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder();
 
         Process process;
@@ -95,6 +93,7 @@ public final class BadApple extends JavaPlugin implements Listener {
 
         Objects.requireNonNull(getCommand("badappler")).setExecutor(this);
         Objects.requireNonNull(getCommand("cancelr")).setExecutor(this);
+        Objects.requireNonNull(getCommand("extractr")).setExecutor(this);
 
         getServer().getPluginManager().registerEvents(this, this);
     }
@@ -118,21 +117,21 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            videoWithExtension = args[0];
+            String videoWithExtension = args[0];
 
-            video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
+            String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
 
-            int exitCode;
-            try {
-                exitCode = extractImages(args[1]);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            if (exitCode != 0) {
-                System.out.println("Failure!");
-                return false;
-            }
+//            int exitCode;
+//            try {
+//                exitCode = extractImages(args[1]);
+//            } catch (IOException | InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            if (exitCode != 0) {
+//                System.out.println("Failure!");
+//                return false;
+//            }
 
             World world = Bukkit.getWorld("world");
 
@@ -222,6 +221,31 @@ public final class BadApple extends JavaPlugin implements Listener {
                     task.cancel();
                 }
             }
+            return true;
+        } else if (label.equalsIgnoreCase("extractr")) {
+            if (args.length == 0) {
+                sender.sendMessage("Please specify a video.");
+                return false;
+            }
+
+            String videoWithExtension = args[0];
+
+            String video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
+
+            int exitCode;
+            try {
+                exitCode = extractImages(args[0], args[1]);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (exitCode != 0) {
+                System.out.println("Failure!");
+                return false;
+            }
+
+            sender.sendMessage("Extracted frames from " + videoWithExtension + " to " + video + "frames");
+
             return true;
         }
         return false;
