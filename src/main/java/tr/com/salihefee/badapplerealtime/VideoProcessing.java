@@ -2,7 +2,6 @@ package tr.com.salihefee.badapplerealtime;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import java.io.IOException;
 
 public class VideoProcessing {
@@ -21,8 +20,6 @@ public class VideoProcessing {
                 int blue = (int) pixels[pixel + 1] & 0xff;
                 int green = (int) pixels[pixel + 2] & 0xff;
                 int red = (int) pixels[pixel + 3] & 0xff;
-                if (blue < 0 || green < 0 || red < 0)
-                    System.out.println("Negative color value");
                 result[row][col] = Math.round(red * 0.299f + green * 0.587f + blue * 0.114f);
                 col++;
                 if (col == w) {
@@ -36,8 +33,6 @@ public class VideoProcessing {
                 int blue = (int) pixels[pixel] & 0xff;
                 int green = (int) pixels[pixel + 1] & 0xff;
                 int red = (int) pixels[pixel + 2] & 0xff;
-                if (blue < 0 || green < 0 || red < 0)
-                    System.out.println("Negative color value");
                 result[row][col] = Math.round(red * 0.299f + green * 0.587f + blue * 0.114f);
                 col++;
                 if (col == w) {

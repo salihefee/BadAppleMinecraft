@@ -18,7 +18,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.time.Instant;
 
 import javax.imageio.ImageIO;
 
@@ -155,8 +154,6 @@ public final class BadApple extends JavaPlugin implements Listener {
             final int[] i = {1};
 
             int length = Objects.requireNonNull(new File(String.format("/home/salihefee/Documents/MineStorage/MineStorageInput/%sframes", video)).listFiles(File::isFile)).length;
-
-            long start = Instant.now().toEpochMilli();
 
             renderTasks.add(getServer().getScheduler().runTaskTimer(this, () -> {
 
