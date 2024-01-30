@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import javax.imageio.ImageIO;
 
 public final class BadApple extends JavaPlugin implements Listener {
@@ -51,22 +50,36 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     private static String video;
 
-    private static int extractImages(String size) {
+    private static int extractImages(String size) throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder();
+
+        Process process;
+
+        int exitCode;
+
+        processBuilder.command("bash", "-c",
+                "mkdir /home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames");
+
+        process = processBuilder.start();
+
+        exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            File dir = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames");
+            for (File file : Objects.requireNonNull(dir.listFiles())) file.delete();
+        }
 
         processBuilder.command("bash", "-c",
                 "ffmpeg -i /home/salihefee/Documents/BadApple/BadAppleInput/" + videoWithExtension
                         + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/BadApple/BadAppleInput/"
                         + video + "frames/frame%d.png");
 
-        Process process;
         try {
             process = processBuilder.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        int exitCode;
         try {
             exitCode = process.waitFor();
         } catch (InterruptedException e) {
@@ -109,7 +122,12 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             video = videoWithExtension.substring(0, videoWithExtension.lastIndexOf('.'));
 
-            int exitCode = extractImages(args[1]);
+            int exitCode;
+            try {
+                exitCode = extractImages(args[1]);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
             if (exitCode != 0) {
                 System.out.println("Failure!");
@@ -154,7 +172,7 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            final int[] currentFrame = { 1 };
+            final int[] currentFrame = {1};
 
             int length = Objects.requireNonNull(
                     new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes", video))
