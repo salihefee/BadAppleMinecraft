@@ -4,6 +4,8 @@
 /target/maven-archiver
 /target/maven-status
 /target/original-BadAppleRealtime-1.0-SNAPSHOT.jar
+/.vscode/
+
 
 dependency-reduced-pom.xml
 BadApple.iml
