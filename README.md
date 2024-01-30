@@ -1,2 +1,2 @@
 # BadAppleMinecraft
-Play videos in Minecraft.
+The plugin first extracts the video's frames using ffmpeg. Next, it reads each of these frames one by one, applying the NTSC grayscale conversion formula to convert the RGB data into a single grayscale intensity. These values are then placed in a 2D array. Lastly, the plugin iterates through these intensity values, placing the appropriate block from a predefined table according to the color intensity. 
