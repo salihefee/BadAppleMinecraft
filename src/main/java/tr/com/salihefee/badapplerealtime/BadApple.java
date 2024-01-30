@@ -52,7 +52,7 @@ public final class BadApple extends JavaPlugin implements Listener {
     private static int extractImages(String size) {
         ProcessBuilder processBuilder = new ProcessBuilder();
 
-        processBuilder.command("bash", "-c", "ffmpeg -i /home/salihefee/Documents/MineStorage/MineStorageInput/" + videoWithExtension + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/MineStorage/MineStorageInput/" + video + "frames/frame%d.png");
+        processBuilder.command("bash", "-c", "ffmpeg -i /home/salihefee/Documents/BadApple/BadAppleInput/" + videoWithExtension + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame%d.png");
 
         Process process;
         try {
@@ -122,7 +122,7 @@ public final class BadApple extends JavaPlugin implements Listener {
             int[][] firstFrameIntensities;
 
             try {
-                firstFrame = ImageIO.read(new File(String.format("/home/salihefee/Documents/MineStorage/MineStorageInput/%sframes/frame1.png", video)));
+                firstFrame = ImageIO.read(new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes/frame1.png", video)));
                 firstFrameIntensities = VideoProcessing.readImage(firstFrame);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -153,7 +153,7 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             final int[] i = {1};
 
-            int length = Objects.requireNonNull(new File(String.format("/home/salihefee/Documents/MineStorage/MineStorageInput/%sframes", video)).listFiles(File::isFile)).length;
+            int length = Objects.requireNonNull(new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes", video)).listFiles(File::isFile)).length;
 
             renderTasks.add(getServer().getScheduler().runTaskTimer(this, () -> {
 
@@ -164,7 +164,7 @@ public final class BadApple extends JavaPlugin implements Listener {
                 BufferedImage image;
                 int[][] intensities;
 
-                File file = new File("/home/salihefee/Documents/MineStorage/MineStorageInput/" + video + "frames/frame" + i[0] + ".png");
+                File file = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame" + i[0] + ".png");
 
                 try {
                     image = ImageIO.read(file);
