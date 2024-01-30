@@ -6,44 +6,34 @@ import java.io.IOException;
 
 public class VideoProcessing {
 
-    public static int[][] readImage(BufferedImage image) throws IOException {
+    private static final float redWeight = 0.299f;
+    private static final float greenWeight = 0.587f;
+    private static final float blueWeight = 0.114f;
 
-        int w = image.getWidth();
-        int h = image.getHeight();
+    public static int[][] readImage(BufferedImage image) throws IOException {
+        int width = image.getWidth();
+        int height = image.getHeight();
         final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
         final boolean hasAlphaChannel = image.getAlphaRaster() != null;
-        int[][] result = new int[h][w];
+        int[][] grayscaleArray = new int[height][width];
 
-        if (hasAlphaChannel) {
-            final int pixelLength = 4;
-            for (int pixel = 0, row = 0, col = 0; pixel + 4 <= pixels.length; pixel += pixelLength) {
-                int blue = (int) pixels[pixel + 1] & 0xff;
-                int green = (int) pixels[pixel + 2] & 0xff;
-                int red = (int) pixels[pixel + 3] & 0xff;
-                result[row][col] = Math.round(red * 0.299f + green * 0.587f + blue * 0.114f);
-                col++;
-                if (col == w) {
-                    col = 0;
-                    row++;
-                }
-            }
-        } else {
-            final int pixelLength = 3;
-            for (int pixel = 0, row = 0, col = 0; pixel + 3 <= pixels.length; pixel += pixelLength) {
-                int blue = (int) pixels[pixel] & 0xff;
-                int green = (int) pixels[pixel + 1] & 0xff;
-                int red = (int) pixels[pixel + 2] & 0xff;
-                result[row][col] = Math.round(red * 0.299f + green * 0.587f + blue * 0.114f);
-                col++;
-                if (col == w) {
-                    col = 0;
-                    row++;
-                }
-            }
-        }
+        final int pixelLength = hasAlphaChannel ? 4 : 3;
+        convertToGrayscale(pixels, grayscaleArray, pixelLength, width);
 
-
-        return result;
+        return grayscaleArray;
     }
 
+    private static void convertToGrayscale(byte[] pixels, int[][] grayscaleArray, int pixelLength, int width) {
+        for (int pixel = 0, row = 0, col = 0; pixel + pixelLength <= pixels.length; pixel += pixelLength) {
+            int blue = (int) pixels[pixel + (pixelLength - 3)] & 0xff;
+            int green = (int) pixels[pixel + (pixelLength - 2)] & 0xff;
+            int red = (int) pixels[pixel + (pixelLength - 1)] & 0xff;
+            grayscaleArray[row][col] = Math.round(red * redWeight + green * greenWeight + blue * blueWeight);
+            col++;
+            if (col == width) {
+                col = 0;
+                row++;
+            }
+        }
+    }
 }
