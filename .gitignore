@@ -1,0 +1,13 @@
+/.idea/
+/target/classes
+/target/generated-sources
+/target/maven-archiver
+/target/maven-status
+/target/original-BadAppleRealtime-1.0-SNAPSHOT.jar
+
+dependency-reduced-pom.xml
+BadApple.iml
+pom.xml
+BadAppleRealtime.iml
+badapplemc.py
+
