@@ -1,2 +1,2 @@
-#BadAppleMinecraft
+# BadAppleMinecraft
 Play videos in Minecraft.
