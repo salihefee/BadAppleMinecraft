@@ -17,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import javax.imageio.ImageIO;
@@ -43,7 +45,7 @@ public final class BadApple extends JavaPlugin implements Listener {
             Material.SNOW_BLOCK
     };
 
-    private static final ArrayList<BukkitTask> renderTasks = new ArrayList<>();
+    private static final List<BukkitTask> renderTasks = Collections.synchronizedList(new ArrayList<>());
 
     private static String videoWithExtension = "badapple.mp4";
 
@@ -52,7 +54,10 @@ public final class BadApple extends JavaPlugin implements Listener {
     private static int extractImages(String size) {
         ProcessBuilder processBuilder = new ProcessBuilder();
 
-        processBuilder.command("bash", "-c", "ffmpeg -i /home/salihefee/Documents/BadApple/BadAppleInput/" + videoWithExtension + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame%d.png");
+        processBuilder.command("bash", "-c",
+                "ffmpeg -i /home/salihefee/Documents/BadApple/BadAppleInput/" + videoWithExtension
+                        + " -vf 'fps=20, scale=-1:" + size + "' /home/salihefee/Documents/BadApple/BadAppleInput/"
+                        + video + "frames/frame%d.png");
 
         Process process;
         try {
@@ -119,18 +124,15 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             BufferedImage firstFrame;
 
-            int[][] firstFrameIntensities;
-
             try {
-                firstFrame = ImageIO.read(new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes/frame1.png", video)));
-                firstFrameIntensities = VideoProcessing.readImage(firstFrame);
+                firstFrame = ImageIO.read(new File(
+                        String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes/frame1.png", video)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
 
-
-            int width = firstFrameIntensities[0].length;
-            int height = firstFrameIntensities.length;
+            int width = firstFrame.getWidth();
+            int height = firstFrame.getHeight();
 
             int fps = 20;
 
@@ -141,56 +143,66 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             int startZ;
 
-            if (playerFacing < -90 || playerFacing > 90) startZ = (int) playerLoc.getZ() - 50;
+            if (playerFacing < -90 || playerFacing > 90)
+                startZ = (int) playerLoc.getZ() - 50;
 
-            else startZ = (int) playerLoc.getZ() + 50;
+            else
+                startZ = (int) playerLoc.getZ() + 50;
 
-            assert world != null;
+            if (world == null) {
+                getLogger().severe("World not found.");
+                return false;
+            }
 
-            // /home/salihefee/Documents/Python/badapple/badapplemc
+            final int[] currentFrame = { 1 };
 
-//            File[] files = Objects.requireNonNull(new File("/home/salihefee/Documents/Python/badapple/badapplemc").listFiles(File::isFile));
+            int length = Objects.requireNonNull(
+                    new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes", video))
+                            .listFiles(File::isFile)).length;
 
-            final int[] i = {1};
+            synchronized (renderTasks) {
+                renderTasks.add(getServer().getScheduler().runTaskTimer(this, () -> {
 
-            int length = Objects.requireNonNull(new File(String.format("/home/salihefee/Documents/BadApple/BadAppleInput/%sframes", video)).listFiles(File::isFile)).length;
-
-            renderTasks.add(getServer().getScheduler().runTaskTimer(this, () -> {
-
-                if (i[0] > length) {
-                    return;
-                }
-
-                BufferedImage image;
-                int[][] intensities;
-
-                File file = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame" + i[0] + ".png");
-
-                try {
-                    image = ImageIO.read(file);
-                    intensities = VideoProcessing.readImage(image);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                for (int yOffset = height - 1; yOffset > 0; yOffset--) {
-                    for (int xOffset = 0; xOffset < width; xOffset++) {
-                        world.getBlockAt(new Location(world, startX + xOffset, startY - yOffset, startZ))
-                                .setType(materials[Math.round(intensities[yOffset][xOffset] / ((float) 255 / (materials.length - 1)))]);
+                    if (currentFrame[0] > length) {
+                        return;
                     }
-                }
 
-                getLogger().info("Rendered frame " + file.getName());
+                    BufferedImage image;
+                    int[][] intensities;
 
-                i[0]++;
-            }, 0, 20 / fps));
+                    File file = new File("/home/salihefee/Documents/BadApple/BadAppleInput/" + video + "frames/frame"
+                            + currentFrame[0] + ".png");
+
+                    try (FileInputStream fis = new FileInputStream(file)) {
+                        image = ImageIO.read(fis);
+                        intensities = VideoProcessing.readImage(image);
+                    } catch (IOException e) {
+                        getLogger().severe("Failed to read image from file: " + file);
+                        return;
+                    }
+
+                    for (int yOffset = height - 1; yOffset > 0; yOffset--) {
+                        for (int xOffset = 0; xOffset < width; xOffset++) {
+                            world.getBlockAt(new Location(world, startX + xOffset, startY - yOffset, startZ))
+                                    .setType(materials[Math.round(
+                                            intensities[yOffset][xOffset] / ((float) 255 / (materials.length - 1)))]);
+                        }
+                    }
+
+                    getLogger().info("Rendered frame " + file.getName());
+
+                    currentFrame[0]++;
+                }, 0, 20 / fps));
+            }
 
             return true;
         } else if (label.equalsIgnoreCase("cancelr")) {
             getLogger().info("Cancelling...");
-//            run = false;
-            for (BukkitTask task : renderTasks) {
-                task.cancel();
+            // run = false;
+            synchronized (renderTasks) {
+                for (BukkitTask task : renderTasks) {
+                    task.cancel();
+                }
             }
             return true;
         }
