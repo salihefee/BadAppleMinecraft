@@ -25,9 +25,9 @@ public class VideoProcessing {
 
     private static void convertToGrayscale(byte[] pixels, int[][] grayscaleArray, int pixelLength, int width) {
         for (int pixel = 0, row = 0, col = 0; pixel + pixelLength <= pixels.length; pixel += pixelLength) {
-            int blue = (int) pixels[pixel + (pixelLength - 3)] & 0xff;
-            int green = (int) pixels[pixel + (pixelLength - 2)] & 0xff;
-            int red = (int) pixels[pixel + (pixelLength - 1)] & 0xff;
+            int blue = pixels[pixel + (pixelLength - 3)] & 0xff;
+            int green = pixels[pixel + (pixelLength - 2)] & 0xff;
+            int red = pixels[pixel + (pixelLength - 1)] & 0xff;
             grayscaleArray[row][col] = Math.round(red * redWeight + green * greenWeight + blue * blueWeight);
             col++;
             if (col == width) {
