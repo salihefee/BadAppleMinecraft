@@ -16,6 +16,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.*;
@@ -63,14 +65,13 @@ public final class BadApple extends JavaPlugin implements Listener {
 
         Process process;
 
-        int exitCode;
+        int exitCode = 0;
 
-        processBuilder.command("bash", "-c",
-                "mkdir " + framesDir);
-
-        process = processBuilder.start();
-
-        exitCode = process.waitFor();
+        try {
+            Files.createDirectory(framesDir);
+        } catch (FileAlreadyExistsException e) {
+            exitCode = 1;
+        }
 
         if (exitCode != 0 && Objects.requireNonNull(new File(framesDir.toString()).listFiles()).length != 0) {
             File dir = new File(framesDir.toString());
@@ -82,9 +83,8 @@ public final class BadApple extends JavaPlugin implements Listener {
                 throw new IOException("Failed to delete files in " + framesDir + ".");
         }
 
-        processBuilder.command("bash", "-c",
-                "ffmpeg -i " + videoPath
-                        + " -vf 'fps=20, scale=-1:" + size + "' " + Paths.get(framesDir.toString(), "frame%d.png"));
+        processBuilder.command("ffmpeg", "-i", videoPath.toString(), "-vf", "fps=20, scale=-1:" + size,
+                Paths.get(framesDir.toString(), "frame%d.png").toString());
 
         try {
             process = processBuilder.start();
