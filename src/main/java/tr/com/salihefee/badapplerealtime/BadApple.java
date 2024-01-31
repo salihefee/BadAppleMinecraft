@@ -47,7 +47,8 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     private static final Map<String, String> framePaths = new HashMap<>();
 
-    private static int extractImages(Path videoPath, String size) throws IOException, InterruptedException {
+    private static int extractImages(Path videoPath, String size, JavaPlugin plugin)
+            throws IOException, InterruptedException {
         Path videoParent = videoPath.getParent();
 
         Path videoFile = videoPath.getFileName();
@@ -75,8 +76,10 @@ public final class BadApple extends JavaPlugin implements Listener {
             File dir = new File(framesDir.toString());
             File[] files = Objects.requireNonNull(dir.listFiles());
             boolean deleteSuccess = false;
-            for (File file : files) deleteSuccess = file.delete();
-            if (!deleteSuccess) throw new IOException("Failed to delete files in " + framesDir + ".");
+            for (File file : files)
+                deleteSuccess = file.delete();
+            if (!deleteSuccess)
+                throw new IOException("Failed to delete files in " + framesDir + ".");
         }
 
         processBuilder.command("bash", "-c",
@@ -86,13 +89,16 @@ public final class BadApple extends JavaPlugin implements Listener {
         try {
             process = processBuilder.start();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            plugin.getLogger().severe("Failed to start ffmpeg.");
+            return 1;
         }
 
         try {
             exitCode = process.waitFor();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            plugin.getLogger().severe("Interrupted while waiting for ffmpeg.");
+            Thread.currentThread().interrupt();
+            return 1;
         }
         return exitCode;
     }
@@ -147,7 +153,8 @@ public final class BadApple extends JavaPlugin implements Listener {
                 firstFrame = ImageIO.read(new File(
                         Paths.get(framesPath, "frame1.png").toString()));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                getLogger().severe("Failed to read first frame.");
+                return false;
             }
 
             int width = firstFrame.getWidth();
@@ -173,7 +180,7 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            final int[] currentFrame = {1};
+            final int[] currentFrame = { 1 };
 
             int length = Objects.requireNonNull(
                     new File(framesPath)
@@ -245,9 +252,13 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             int exitCode;
             try {
-                exitCode = extractImages(videoPath, args[1]);
+                exitCode = extractImages(videoPath, args[1], this);
             } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                getLogger().severe("Failed to extract images.");
+                return false;
             }
 
             if (exitCode != 0) {
@@ -257,7 +268,8 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             sender.sendMessage("Extraction done.");
 
-            framePaths.put(videoFile.getName(), Paths.get(videoPath.getParent().toString(), videoNameNoExtension + "frames").toString());
+            framePaths.put(videoFile.getName(),
+                    Paths.get(videoPath.getParent().toString(), videoNameNoExtension + "frames").toString());
 
             return true;
         }
