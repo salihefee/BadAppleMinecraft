@@ -143,6 +143,11 @@ public final class BadApple extends JavaPlugin implements Listener {
 
             World world = Bukkit.getWorld("world");
 
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("This command can only be run by a player.");
+                return false;
+            }
+
             Player player = (Player) sender;
 
             Location playerLoc = player.getLocation();
