@@ -24,7 +24,7 @@ import java.util.*;
 import javax.imageio.ImageIO;
 
 public final class BadApple extends JavaPlugin implements Listener {
-    private static final Material[] materials = {
+    static final Material[] materials = {
             Material.BLACK_CONCRETE,
             Material.BLACK_WOOL,
             Material.BLACKSTONE,
@@ -49,7 +49,7 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     private static final Map<String, String> framePaths = new HashMap<>();
 
-    private static int extractImages(Path videoPath, String size, JavaPlugin plugin)
+    static int extractImages(Path videoPath, String size, JavaPlugin plugin)
             throws IOException, InterruptedException {
         Path videoParent = videoPath.getParent();
 
@@ -80,7 +80,7 @@ public final class BadApple extends JavaPlugin implements Listener {
             for (File file : files)
                 deleteSuccess = file.delete();
             if (!deleteSuccess)
-                throw new IOException("Failed to delete files in " + framesDir + ".");
+                return 1;
         }
 
         processBuilder.command("ffmpeg", "-i", videoPath.toString(), "-vf", "fps=20, scale=-1:" + size,
@@ -105,7 +105,6 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
         getLogger().info("Hello, World!");
 
         Objects.requireNonNull(getCommand("badappler")).setExecutor(this);
@@ -117,7 +116,6 @@ public final class BadApple extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
         getLogger().info("Bye, World!");
     }
 
@@ -165,8 +163,6 @@ public final class BadApple extends JavaPlugin implements Listener {
             int width = firstFrame.getWidth();
             int height = firstFrame.getHeight();
 
-            int fps = 20;
-
             int startX = (int) playerLoc.getX() - width / 2;
             int startY = (int) playerLoc.getY() + height / 2;
 
@@ -185,45 +181,15 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            final int[] currentFrame = { 1 };
-
             int length = Objects.requireNonNull(
                     new File(framesPath)
                             .listFiles(File::isFile)).length;
 
+            int[] currentFrame = { 1 };
+
             synchronized (renderTasks) {
-                renderTasks.add(getServer().getScheduler().runTaskTimer(this, () -> {
-
-                    if (currentFrame[0] > length) {
-                        return;
-                    }
-
-                    BufferedImage image;
-                    int[][] intensities;
-
-                    File file = new File(Paths.get(framesPath, "/frame"
-                            + currentFrame[0] + ".png").toString());
-
-                    try (FileInputStream fis = new FileInputStream(file)) {
-                        image = ImageIO.read(fis);
-                        intensities = VideoProcessing.readImage(image);
-                    } catch (IOException e) {
-                        getLogger().severe("Failed to read image from file: " + file);
-                        return;
-                    }
-
-                    for (int yOffset = height - 1; yOffset > 0; yOffset--) {
-                        for (int xOffset = 0; xOffset < width; xOffset++) {
-                            world.getBlockAt(new Location(world, startX + xOffset, startY - yOffset, startZ))
-                                    .setType(materials[Math.round(
-                                            intensities[yOffset][xOffset] / ((float) 255 / (materials.length - 1)))]);
-                        }
-                    }
-
-                    getLogger().info("Rendered frame " + file.getName());
-
-                    currentFrame[0]++;
-                }, 0, 20 / fps));
+                renderTasks.add(getServer().getScheduler().runTaskTimer(this, new videoPlayer(framesPath, world, player,
+                        width, height, startX, startY, startZ, this, length, currentFrame), 0, 1));
             }
 
             return true;
@@ -255,23 +221,9 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            int exitCode;
-            try {
-                exitCode = extractImages(videoPath, args[1], this);
-            } catch (IOException | InterruptedException e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                getLogger().severe("Failed to extract images.");
-                return false;
-            }
-
-            if (exitCode != 0) {
-                System.out.println("Failure!");
-                return false;
-            }
-
-            sender.sendMessage("Extraction done.");
+            ImageExtractor imageExtractor = new ImageExtractor(videoPath, "100", this, sender);
+            Thread thread = new Thread(imageExtractor);
+            thread.start();
 
             framePaths.put(videoFile.getName(),
                     Paths.get(videoPath.getParent().toString(), videoNameNoExtension + "frames").toString());
@@ -279,5 +231,103 @@ public final class BadApple extends JavaPlugin implements Listener {
             return true;
         }
         return false;
+    }
+}
+
+class ImageExtractor implements Runnable {
+    private final Path videoPath;
+    private final String size;
+    private final JavaPlugin plugin;
+    private final CommandSender sender;
+    private int exitCode;
+
+    public ImageExtractor(Path videoPath, String size, JavaPlugin plugin, CommandSender sender) {
+        this.videoPath = videoPath;
+        this.size = size;
+        this.plugin = plugin;
+        this.sender = sender;
+    }
+
+    public void run() {
+        try {
+            exitCode = BadApple.extractImages(videoPath, size, plugin);
+            if (exitCode != 0) {
+                plugin.getLogger().severe("Failed to extract images.");
+            } else {
+                plugin.getLogger().info("Extraction done.");
+
+                Path framesDir = Paths.get(videoPath.getParent().toString(),
+                        videoPath.getFileName().toString().substring(0,
+                                videoPath.getFileName().toString().lastIndexOf('.')) + "frames");
+
+                long count = Files.list(framesDir).filter(Files::isRegularFile).count();
+
+                sender.sendMessage("Extraction done. " + count + " frames extracted.");
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            plugin.getLogger().severe("Failed to extract images.");
+        }
+    }
+}
+
+class videoPlayer implements Runnable {
+    private final String framesPath;
+    private final World world;
+    private final int width;
+    private final int height;
+    private final int startX;
+    private final int startY;
+    private final int startZ;
+    private final JavaPlugin plugin;
+    private final int length;
+    private final int[] currentFrame;
+
+    public videoPlayer(String framesPath, World world, Player player, int width, int height, int startX,
+            int startY, int startZ, JavaPlugin plugin, int length, int[] currentFrame) {
+        this.framesPath = framesPath;
+        this.world = world;
+        this.width = width;
+        this.height = height;
+        this.startX = startX;
+        this.startY = startY;
+        this.startZ = startZ;
+        this.plugin = plugin;
+        this.length = length;
+        this.currentFrame = currentFrame;
+    }
+
+    public void run() {
+        if (currentFrame[0] > length) {
+            return;
+        }
+
+        BufferedImage image;
+        int[][] intensities;
+
+        File file = new File(Paths.get(framesPath, "/frame"
+                + currentFrame[0] + ".png").toString());
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            image = ImageIO.read(fis);
+            intensities = VideoProcessing.readImage(image);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to read image from file: " + file);
+            return;
+        }
+
+        for (int yOffset = height - 1; yOffset > 0; yOffset--) {
+            for (int xOffset = 0; xOffset < width; xOffset++) {
+                world.getBlockAt(new Location(world, startX + xOffset, startY - yOffset, startZ))
+                        .setType(BadApple.materials[Math.round(
+                                intensities[yOffset][xOffset] / ((float) 255 / (BadApple.materials.length - 1)))]);
+            }
+        }
+
+        plugin.getLogger().info("Rendered frame " + file.getName());
+
+        currentFrame[0]++;
     }
 }
