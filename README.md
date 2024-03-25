@@ -1,7 +1,7 @@
 # BadAppleMinecraft
 
 A Minecraft plugin that plays any video you want, on a screen made out of blocks. It requires ffmpeg to be installed on
-the system, and added to the PATH variable.
+the system, and added to PATH.
 
 ## Commands
 
