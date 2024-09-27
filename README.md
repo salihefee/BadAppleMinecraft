@@ -17,4 +17,4 @@ extension in the video argument.
 
 ### `/cancelr`
 
-Stops playback. Stops all if there are multiple videos rendering.
+Stops playback. Stops all if there are multiple videos playing.
