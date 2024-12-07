@@ -187,7 +187,7 @@ public final class BadApple extends JavaPlugin implements Listener {
             int[] currentFrame = { 1 };
 
             synchronized (renderTasks) {
-                renderTasks.add(getServer().getScheduler().runTaskTimer(this, new videoPlayer(framesPath, world,
+                renderTasks.add(getServer().getScheduler().runTaskTimer(this, new VideoPlayer(framesPath, world,
                         width, height, startX, startY, startZ, this, length, currentFrame), 0, 1));
             }
 
@@ -281,7 +281,7 @@ class ImageExtractor implements Runnable {
     }
 }
 
-class videoPlayer implements Runnable {
+class VideoPlayer implements Runnable {
     private final String framesPath;
     private final World world;
     private final int width;
@@ -293,7 +293,7 @@ class videoPlayer implements Runnable {
     private final int length;
     private final int[] currentFrame;
 
-    public videoPlayer(String framesPath, World world, int width, int height, int startX,
+    public VideoPlayer(String framesPath, World world, int width, int height, int startX,
                        int startY, int startZ, JavaPlugin plugin, int length, int[] currentFrame) {
         this.framesPath = framesPath;
         this.world = world;
