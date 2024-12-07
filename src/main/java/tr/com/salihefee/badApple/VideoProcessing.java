@@ -5,11 +5,6 @@ import java.awt.image.DataBufferByte;
 import java.io.IOException;
 
 public class VideoProcessing {
-
-    private static final float redWeight = 0.299f;
-    private static final float greenWeight = 0.587f;
-    private static final float blueWeight = 0.114f;
-
     public static int[][] readImage(BufferedImage image) throws IOException {
         int width = image.getWidth();
         int height = image.getHeight();
@@ -24,6 +19,10 @@ public class VideoProcessing {
     }
 
     private static void convertToGrayscale(byte[] pixels, int[][] grayscaleArray, int pixelLength, int width) {
+        final float redWeight = 0.299f;
+        final float greenWeight = 0.587f;
+        final float blueWeight = 0.114f;
+
         for (int pixel = 0, row = 0, col = 0; pixel + pixelLength <= pixels.length; pixel += pixelLength) {
             int blue = pixels[pixel + (pixelLength - 3)] & 0xff;
             int green = pixels[pixel + (pixelLength - 2)] & 0xff;

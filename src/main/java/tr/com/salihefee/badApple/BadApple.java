@@ -184,7 +184,7 @@ public final class BadApple extends JavaPlugin implements Listener {
                     new File(framesPath)
                             .listFiles(File::isFile)).length;
 
-            int[] currentFrame = { 1 };
+            int[] currentFrame = {1};
 
             synchronized (renderTasks) {
                 renderTasks.add(getServer().getScheduler().runTaskTimer(this, new VideoPlayer(framesPath, world,
