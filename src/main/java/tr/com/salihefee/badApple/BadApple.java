@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 
 public final class BadApple extends JavaPlugin implements Listener {
@@ -205,8 +206,14 @@ public final class BadApple extends JavaPlugin implements Listener {
                 sender.sendMessage("Please specify a video.");
                 return false;
             }
+            if (args.length > 2) {
+                sender.sendMessage("Received more arguments than expected.");
+                return false;
+            }
 
             String videoPathStr = args[0];
+
+            String videoSize = args[1];
 
             Path videoPath = Paths.get(videoPathStr);
 
@@ -219,7 +226,7 @@ public final class BadApple extends JavaPlugin implements Listener {
                 return false;
             }
 
-            ImageExtractor imageExtractor = new ImageExtractor(videoPath, "100", this, sender);
+            ImageExtractor imageExtractor = new ImageExtractor(videoPath, videoSize, this, sender);
             Thread thread = new Thread(imageExtractor);
             thread.start();
 
@@ -257,7 +264,11 @@ class ImageExtractor implements Runnable {
                         videoPath.getFileName().toString().substring(0,
                                 videoPath.getFileName().toString().lastIndexOf('.')) + "frames");
 
-                long count = Files.list(framesDir).filter(Files::isRegularFile).count();
+
+                long count;
+                try (Stream<Path> fileList = Files.list(framesDir)) {
+                    count = fileList.filter(Files::isRegularFile).count();
+                }
 
                 sender.sendMessage("Extraction done. " + count + " frames extracted.");
             }
