@@ -1,0 +1,13 @@
+name: BadApple
+version: '1.0-SNAPSHOT'
+main: tr.com.salihefee.badApple.BadApple
+api-version: '1.20'
+commands:
+  badapple:
+    usage: /badapple <videoName>
+    description: Plays the video specified.
+  cancel:
+    usage: /cancel
+    description: Stops playback.
+  extract:
+    usage: /extract <videoPath> <size>
