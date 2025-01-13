@@ -1,4 +1,6 @@
 reuploaded cause i noticed it didnt have the pom.xml
+
+scuffed asd
 # BadAppleMinecraft
 
 A Minecraft plugin that plays any video you want, on a screen made out of blocks. It requires ffmpeg to be installed on
